@@ -1,33 +1,20 @@
 <?php
 
 return [
+    'workshop.sidebar' => [
+        'group' => 'workshop::workshop.show sidebar group',
+    ],
     'workshop.modules' => [
-        'index',
-        'show',
-        'disable',
-        'enable',
+        'index' => 'workshop::modules.list resource',
+        'show' => 'workshop::modules.show resource',
+        'update' => 'workshop::modules.update resource',
+        'disable' => 'workshop::modules.disable resource',
+        'enable' => 'workshop::modules.enable resource',
+        'publish' => 'workshop::modules.publish assets',
     ],
     'workshop.themes' => [
-        'index',
-        'show',
+        'index' => 'workshop::themes.list resource',
+        'show' => 'workshop::themes.show resource',
+        'publish' => 'workshop::themes.publish assets',
     ],
-    /*'workshop.workbench' => [
-        'index',
-        'generate',
-        'migrate',
-        'install',
-        'seed',
-    ],
-    'workshop.generate' => [
-        'generate',
-    ],
-    'workshop.install' => [
-        'install',
-    ],
-    'workshop.migrate' => [
-        'migrate',
-    ],
-    'workshop.seed' => [
-        'seed',
-    ],*/
 ];

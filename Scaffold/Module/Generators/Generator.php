@@ -1,8 +1,11 @@
-<?php namespace Modules\Workshop\Scaffold\Module\Generators;
+<?php
+
+namespace Modules\Workshop\Scaffold\Module\Generators;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Str;
 
 abstract class Generator
 {
@@ -43,7 +46,7 @@ abstract class Generator
      */
     public function forModule($moduleName)
     {
-        $this->name = $moduleName;
+        $this->name = Str::studly($moduleName);
 
         return $this;
     }
@@ -81,6 +84,15 @@ abstract class Generator
      */
     protected function getStubPath($filename)
     {
+        $folder = $this->config->get('asgard.workshop.config.custom-stubs-folder');
+
+        if ($folder !== null) {
+            $file = realpath($folder . '/' . $filename);
+            if ($file !== false) {
+                return $file;
+            }
+        }
+
         return __DIR__ . "/../stubs/$filename";
     }
 
@@ -112,7 +124,7 @@ abstract class Generator
                 '$CLASS_NAME$',
                 '$LOWERCASE_CLASS_NAME$',
                 '$PLURAL_LOWERCASE_CLASS_NAME$',
-                '$PLURAL_UCWORDS_CLASS_NAME$',
+                '$PLURAL_CLASS_NAME$',
                 '$ENTITY_TYPE$',
             ],
             [

@@ -17,7 +17,7 @@
     </ol>
 @stop
 
-@section('styles')
+@push('css-stack')
     <style>
         .module-type {
             text-align: center;
@@ -36,7 +36,7 @@
             display: inline;
         }
     </style>
-@stop
+@endpush
 
 @section('content')
     <div class="row">
@@ -76,7 +76,7 @@
     </div>
     <?php if (!empty($theme->changelog) && count($theme->changelog['versions'])): ?>
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="box box-primary">
                 <div class="box-header">
                     <h3 class="box-title"><i class="fa fa-bars"></i> {{ trans('workshop::modules.changelog')}}</h3>
@@ -95,7 +95,7 @@
     <?php endif; ?>
 @stop
 
-@section('scripts')
+@push('js-stack')
     <script>
         $( document ).ready(function() {
             $('.jsPublishAssets').on('click',function (event) {
@@ -113,4 +113,4 @@
             });
         });
     </script>
-@stop
+@endpush

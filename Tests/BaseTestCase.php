@@ -1,4 +1,6 @@
-<?php namespace Modules\Workshop\Tests;
+<?php
+
+namespace Modules\Workshop\Tests;
 
 use Collective\Html\FormFacade;
 use Collective\Html\HtmlFacade;
@@ -6,8 +8,8 @@ use Collective\Html\HtmlServiceProvider;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use Mcamara\LaravelLocalization\LaravelLocalizationServiceProvider;
 use Modules\Workshop\Providers\WorkshopServiceProvider;
+use Nwidart\Modules\LaravelModulesServiceProvider;
 use Orchestra\Testbench\TestCase;
-use Pingpong\Modules\ModulesServiceProvider;
 
 abstract class BaseTestCase extends TestCase
 {
@@ -21,7 +23,7 @@ abstract class BaseTestCase extends TestCase
         return [
             LaravelLocalizationServiceProvider::class,
             WorkshopServiceProvider::class,
-            ModulesServiceProvider::class,
+            LaravelModulesServiceProvider::class,
             HtmlServiceProvider::class,
         ];
     }
@@ -37,7 +39,6 @@ abstract class BaseTestCase extends TestCase
 
     protected function getEnvironmentSetUp($app)
     {
-        $app['path.base'] = realpath(__DIR__ . '/../Modules');
         $app['config']->set('modules.namespace', 'Modules');
         $app['config']->set('app.locale', 'en');
         $app['config']->set('modules.paths.generator', [
@@ -55,6 +56,8 @@ abstract class BaseTestCase extends TestCase
             'lang' => 'Resources/lang',
             'views' => 'Resources/views',
             'test' => 'Tests',
+            'event' => 'Events',
+            'listener' => 'Events/Handlers',
         ]);
         $app['config']->set('laravellocalization.supportedLocales', [
             'en' => ['name' => 'English', 'script' => 'Latn', 'native' => 'English'],
@@ -62,5 +65,6 @@ abstract class BaseTestCase extends TestCase
         ]);
         $app['config']->set('modules.paths.modules', realpath(__DIR__ . '/../Modules'));
         $app['config']->set('stylist.themes.paths', [base_path('Themes')]);
+        $app['config']->set('asgard.core.core.themes_path', base_path('Themes'));
     }
 }

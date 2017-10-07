@@ -1,4 +1,6 @@
-<?php namespace Modules\Workshop\Scaffold\Theme\Traits;
+<?php
+
+namespace Modules\Workshop\Scaffold\Theme\Traits;
 
 trait FindsThemePath
 {
@@ -9,7 +11,7 @@ trait FindsThemePath
      */
     public function themePath($name = '')
     {
-        return config('stylist.themes.paths')[0] . "/$name";
+        return config('asgard.core.core.themes_path') . "/$name";
     }
 
     /**
@@ -20,6 +22,6 @@ trait FindsThemePath
      */
     public function themePathForFile($name, $file)
     {
-        return config('stylist.themes.paths')[0] . "/$name/$file";
+        return config('asgard.core.core.themes_path') . "/$name/$file";
     }
 }

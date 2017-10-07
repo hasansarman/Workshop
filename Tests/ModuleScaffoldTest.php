@@ -1,5 +1,8 @@
-<?php namespace Modules\Workshop\Tests;
+<?php
 
+namespace Modules\Workshop\Tests;
+
+use Modules\Workshop\Scaffold\Module\Exception\ModuleExistsException;
 use Modules\Workshop\Scaffold\Module\ModuleScaffold;
 
 class ModuleScaffoldTest extends BaseTestCase
@@ -20,14 +23,37 @@ class ModuleScaffoldTest extends BaseTestCase
      * @var string The name of the module under test
      */
     protected $testModuleName;
+    /**
+     * @var string The sanitized name of the module under test
+     */
+    protected $testModuleSanitizedName;
 
     public function setUp()
     {
+        $this->testModuleName = 'Testing_The-TestModule';
+        $this->testModuleSanitizedName = 'TestingTheTestModule';
+        $this->testModulePath = __DIR__ . "/../Modules/{$this->testModuleSanitizedName}";
+        $this->cleanUp();
+
         parent::setUp();
+
         $this->finder = $this->app['files'];
         $this->scaffold = $this->app['asgard.module.scaffold'];
-        $this->testModuleName = 'TestingTestModule';
-        $this->testModulePath = __DIR__ . "/../Modules/{$this->testModuleName}";
+    }
+
+    /**
+     * Recursively remove the given directory
+     * @param string $dir
+     * @return bool
+     */
+    public static function delTree($dir)
+    {
+        $files = array_diff(scandir($dir), array('.', '..'));
+        foreach ($files as $file) {
+            (is_dir("$dir/$file")) ? self::delTree("$dir/$file") : unlink("$dir/$file");
+        }
+
+        return rmdir($dir);
     }
 
     /**
@@ -35,7 +61,10 @@ class ModuleScaffoldTest extends BaseTestCase
      */
     private function cleanUp()
     {
-        $this->finder->deleteDirectory($this->testModulePath);
+        if (file_exists(__DIR__ . '/../Modules/')) {
+            self::delTree(__DIR__ . '/../Modules/');
+        }
+        mkdir(__DIR__ . '/../Modules/', 0777);
     }
 
     /**
@@ -62,7 +91,7 @@ class ModuleScaffoldTest extends BaseTestCase
      * @param $type
      * @param $entities
      * @param $valueObjects
-     * @throws \Modules\Workshop\Scaffold\Module\Exception\ModuleExistsException
+     * @throws ModuleExistsException
      */
     private function scaffoldModule($type, $entities, $valueObjects)
     {
@@ -77,7 +106,9 @@ class ModuleScaffoldTest extends BaseTestCase
 
     public function tearDown()
     {
-        $this->cleanUp();
+        if (file_exists(__DIR__ . '/../Modules/')) {
+            self::delTree(__DIR__ . '/../Modules/');
+        }
     }
 
     /** @test */
@@ -230,10 +261,31 @@ class ModuleScaffoldTest extends BaseTestCase
         $this->scaffoldModuleWithEloquent();
 
         $file1 = $this->finder->isFile($this->testModulePath . '/Providers/RouteServiceProvider.php');
-        $file2 = $this->finder->isFile($this->testModulePath . "/Providers/{$this->testModuleName}ServiceProvider.php");
+        $file2 = $this->finder->isFile($this->testModulePath . "/Providers/{$this->testModuleSanitizedName}ServiceProvider.php");
 
         $this->assertTrue($file1);
         $this->assertTrue($file2);
+
+        $this->cleanUp();
+    }
+
+    /** @test */
+    public function it_generates_service_provider_with_content()
+    {
+        $this->scaffoldModuleWithEloquent();
+
+        $file = $this->finder->get($this->testModulePath . "/Providers/{$this->testModuleSanitizedName}ServiceProvider.php");
+
+        $sidebarEventListenerName = "Register{$this->testModuleSanitizedName}Sidebar";
+        $this->assertTrue(str_contains(
+            $file,
+            '$this->loadMigrationsFrom(__DIR__ . \'/../Database/Migrations\');'
+        ), 'Migrations arent loaded');
+
+        $this->assertTrue(str_contains(
+            $file,
+            '$this->app[\'events\']->listen(BuildingSidebar::class, ' . $sidebarEventListenerName . '::class);'
+        ), 'Sidebar event handler was not present');
 
         $this->cleanUp();
     }
@@ -245,6 +297,20 @@ class ModuleScaffoldTest extends BaseTestCase
 
         $file1 = $this->finder->isFile($this->testModulePath . '/Http/Controllers/Admin/PostController.php');
         $file2 = $this->finder->isFile($this->testModulePath . '/Http/Controllers/Admin/CategoryController.php');
+
+        $this->assertTrue($file1);
+        $this->assertTrue($file2);
+
+        $this->cleanUp();
+    }
+
+    /** @test */
+    public function it_should_generate_requests()
+    {
+        $this->scaffoldModuleWithEloquent(['Post']);
+
+        $file1 = $this->finder->isFile($this->testModulePath . '/Http/Requests/CreatePostRequest.php');
+        $file2 = $this->finder->isFile($this->testModulePath . '/Http/Requests/UpdatePostRequest.php');
 
         $this->assertTrue($file1);
         $this->assertTrue($file2);
@@ -265,36 +331,41 @@ class ModuleScaffoldTest extends BaseTestCase
     }
 
     /** @test */
-    public function it_should_generate_sidebar_extender_file()
+    public function it_should_generate_sidebar_event_handler()
     {
         $this->scaffoldModuleWithEloquent();
 
-        $file1 = $this->finder->isFile($this->testModulePath . '/Sidebar/SidebarExtender.php');
+        $file = $this->finder->isFile($this->testModulePath . "/Events/Handlers/Register{$this->testModuleSanitizedName}Sidebar.php");
 
-        $this->assertTrue($file1);
+        $this->assertTrue($file);
 
         $this->cleanUp();
     }
 
     /** @test */
-    public function it_should_generate_filled_sidebar_extender()
+    public function it_should_generate_filled_sidebar_event_handler()
     {
         $this->scaffoldModuleWithEloquent();
 
-        $viewComposer = $this->finder->get($this->testModulePath . '/Sidebar/SidebarExtender.php');
+        $file = $this->finder->get($this->testModulePath . "/Events/Handlers/Register{$this->testModuleSanitizedName}Sidebar.php");
 
-        $this->assertTrue(str_contains($viewComposer, '$menu->group'));
+        $this->assertTrue(str_contains($file, '$menu->group'));
+        $this->assertTrue(str_contains($file, "class Register{$this->testModuleSanitizedName}Sidebar"));
+
+        $this->cleanUp();
     }
 
     /** @test */
-    public function it_should_generate_empty_sidebar_extender_if_no_entities()
+    public function it_should_generate_empty_sidebar_event_handler_if_no_entities()
     {
         $this->scaffoldModule('Eloquent', [], []);
 
-        $viewComposer = $this->finder->get($this->testModulePath . '/Sidebar/SidebarExtender.php');
+        $file = $this->finder->get($this->testModulePath . "/Events/Handlers/Register{$this->testModuleSanitizedName}Sidebar.php");
 
-        $this->assertFalse(str_contains($viewComposer, '$menu->group'));
-        $this->assertTrue(str_contains($viewComposer, 'return $menu'));
+        $this->assertFalse(str_contains($file, '$menu->group'));
+        $this->assertTrue(str_contains($file, 'return $menu'));
+
+        $this->cleanUp();
     }
 
     /** @test */
@@ -323,14 +394,15 @@ class ModuleScaffoldTest extends BaseTestCase
         $this->cleanUp();
     }
 
+    /** @test */
     public function it_should_throw_exception_if_module_exists()
     {
-        $this->setExpectedException('Modules\Workshop\Scaffold\Exception\ModuleExistsException');
+        $this->expectException(ModuleExistsException::class);
 
         $this->scaffoldModuleWithEloquent();
         $this->scaffoldModuleWithEloquent();
 
-        $this->assertEquals('Modules\Workshop\Scaffold\Exception\ModuleExistsException', $this->getExpectedException());
+        $this->assertEquals(ModuleExistsException::class, $this->getExpectedException());
     }
 
     /** @test */
@@ -351,6 +423,16 @@ class ModuleScaffoldTest extends BaseTestCase
         $composerJson = $this->finder->isFile($this->testModulePath . '/composer.json');
 
         $this->assertTrue($composerJson);
+    }
+
+    /** @test */
+    public function it_should_use_correct_vendor_name_in_composer_json()
+    {
+        $this->scaffoldModuleWithEloquent();
+
+        $composerJson = $this->getComposerFile();
+
+        $this->assertEquals('asgardcms/testingthetestmodule', $composerJson->name);
     }
 
     /** @test */
@@ -405,7 +487,7 @@ class ModuleScaffoldTest extends BaseTestCase
         $key = 'minimum-stability';
 
         $this->assertTrue(isset($composerJson->$key));
-        $this->assertEquals('dev', $composerJson->$key);
+        $this->assertEquals('stable', $composerJson->$key);
     }
 
     /** @test */
@@ -436,17 +518,32 @@ class ModuleScaffoldTest extends BaseTestCase
         $this->scaffoldModuleWithEloquent(['Post']);
 
         $controllerContents = $this->getAdminControllerFile('Post');
-        $lowercaseModuleName = strtolower($this->testModuleName);
+        $lowercaseModuleName = strtolower($this->testModuleSanitizedName);
 
         $matches = [
-            "flash()->success(trans('core::core.messages.resource created', ['name' => trans('{$lowercaseModuleName}::posts.title.posts')]));",
-            "flash()->success(trans('core::core.messages.resource updated', ['name' => trans('{$lowercaseModuleName}::posts.title.posts')]));",
-            "flash()->success(trans('core::core.messages.resource deleted', ['name' => trans('{$lowercaseModuleName}::posts.title.posts')]));",
+            "withSuccess(trans('core::core.messages.resource created', ['name' => trans('{$lowercaseModuleName}::posts.title.posts')]));",
+            "withSuccess(trans('core::core.messages.resource updated', ['name' => trans('{$lowercaseModuleName}::posts.title.posts')]));",
+            "withSuccess(trans('core::core.messages.resource deleted', ['name' => trans('{$lowercaseModuleName}::posts.title.posts')]));",
         ];
 
         foreach ($matches as $match) {
             $this->assertContains($match, $controllerContents);
         }
+
+        $this->cleanUp();
+    }
+
+    /** @test */
+    public function it_can_overwrite_stub_files_with_custom_ones()
+    {
+        config()->set('asgard.workshop.config.custom-stubs-folder', __DIR__ . '/stubs');
+
+        $this->scaffoldModuleWithEloquent();
+
+        $path = $this->testModulePath . '/Http/backendRoutes.php';
+        $file = $this->finder->get($path);
+        $this->assertTrue($this->finder->isFile($path));
+        $this->assertContains('overwritten by custom config', $file);
 
         $this->cleanUp();
     }

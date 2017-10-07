@@ -1,4 +1,6 @@
-<?php namespace Modules\Workshop\Scaffold\Module;
+<?php
+
+namespace Modules\Workshop\Scaffold\Module;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Console\Kernel;
@@ -103,8 +105,8 @@ class ModuleScaffold
 
         $this->cleanUpModuleJson();
 
-        $this->entityGenerator->forModule($this->name)->type($this->entityType)->generate($this->entities);
-        $this->valueObjectGenerator->forModule($this->name)->type($this->entityType)->generate($this->valueObjects);
+        $this->entityGenerator->forModule($this->getName())->type($this->entityType)->generate($this->entities);
+        $this->valueObjectGenerator->forModule($this->getName())->type($this->entityType)->generate($this->valueObjects);
     }
 
     /**
@@ -127,6 +129,16 @@ class ModuleScaffold
         $this->name = $name;
 
         return $this;
+    }
+
+    /**
+     * Get the name of module will created. By default in studly case.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return studly_case($this->name);
     }
 
     /**
@@ -170,7 +182,7 @@ class ModuleScaffold
      */
     private function getModulesPath($path = '')
     {
-        return $this->config->get('modules.paths.modules') . "/{$this->name}/$path";
+        return $this->config->get('modules.paths.modules') . "/{$this->getName()}/$path";
     }
 
     /**
@@ -180,7 +192,7 @@ class ModuleScaffold
     private function renameVendorName()
     {
         $composerJsonContent = $this->finder->get($this->getModulesPath('composer.json'));
-        $composerJsonContent = str_replace('pingpong-modules', $this->vendor, $composerJsonContent);
+        $composerJsonContent = str_replace('nwidart', $this->vendor, $composerJsonContent);
         $this->finder->put($this->getModulesPath('composer.json'), $composerJsonContent);
     }
 
@@ -289,14 +301,15 @@ JSON;
         $replace = <<<JSON
 "description": "",
     "type": "asgard-module",
+    "license": "MIT", 
     "require": {
-        "php": ">=5.4",
+        "php": ">=5.6",
         "composer/installers": "~1.0",
-        "asgardcms/core-module": "~1.0"
+        "idavoll/core-module": "~2.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "~4.0",
-        "orchestra/testbench": "~3.1"
+        "phpunit/phpunit": "~5.7",
+        "orchestra/testbench": "3.4.*"
     },
     "autoload-dev": {
         "psr-4": {
@@ -304,10 +317,26 @@ JSON;
             "Modules\\\\": "Modules/"
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true,
 JSON;
         $composerJson = str_replace($search, $replace, $composerJson);
         $this->finder->put($this->getModulesPath('composer.json'), $composerJson);
+    }
+
+    /**
+     * Adding the module name to the .gitignore file so that it can be committed
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+     */
+    private function addModuleToIgnoredExceptions()
+    {
+        $modulePath = $this->config->get('modules.paths.modules');
+
+        if ($this->finder->exists($modulePath . '/.gitignore') === false) {
+            return;
+        }
+        $moduleGitIgnore = $this->finder->get($modulePath . '/.gitignore');
+        $moduleGitIgnore .= '!' . $this->getName() . PHP_EOL;
+        $this->finder->put($modulePath . '/.gitignore', $moduleGitIgnore);
     }
 }

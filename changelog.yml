@@ -1,11 +1,32 @@
-url: https://github.com/AsgardCms/Workshop
+url: https://github.com/AsgardCms/Platform
 versions:
-    "1.17.1":
+    "2.5.0":
+        added:
+            - Module scaffold command now also generates form requests
         changed:
-            - Checking for user or setting group permissions on workshop sidebar group
-    "1.17.0":
+            - Using the @push js stacks over the scripts section
+            - Using the @push css stacks over the styles section
+            - Register module migrations by default to ease testing in service provider
+            - SidebarExtender class has been removed in favor of new Sidebar event handlers
+            - Register the sidebar event handler in service provider
+            - Sidebar is now loaded via the <code>BuildingSidebar</code> hook
+        removed:
+            - Removing ckeditor from the default scaffolded views, now included via <code>EditorIsRendering</code> hook
+    "2.4.0":
+        added:
+            - Add the ability to set custom stubs folder used by generated modules
+    "2.0.0":
+        added:
+            - Laravel 5.4 compatibility
+            - Ability to add unreleased items in module changelog, by suffixing version with <code>@unreleased</code>
+            - Protecting api routes with api admin middleware
         changed:
-            - Only list workshop in sidebar when accessible
+            - Using new more flexible way of handle permissions via middleware
+            - Module names can have a dash in them, for instance <code>module-name</code>
+            - Adding the scaffolded module name to the .gitignore file so that it can be committed
+            - Adding the scaffolded theme name to .gitignore file so that it can be committed
+        removed:
+            - Remove laracasts/flash dependency from controller stub
     "1.16.0":
         changed:
             - Use <code>$router</code> variable in routes file

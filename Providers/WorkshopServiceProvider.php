@@ -1,10 +1,17 @@
-<?php namespace Modules\Workshop\Providers;
+<?php
+
+namespace Modules\Workshop\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\Core\Events\BuildingSidebar;
 use Modules\Core\Services\Composer;
+use Modules\Core\Traits\CanGetSidebarClassForModule;
+use Modules\Core\Traits\CanPublishConfiguration;
+use Modules\Workshop\Console\EntityScaffoldCommand;
 use Modules\Workshop\Console\ModuleScaffoldCommand;
 use Modules\Workshop\Console\ThemeScaffoldCommand;
 use Modules\Workshop\Console\UpdateModuleCommand;
+use Modules\Workshop\Events\Handlers\RegisterWorkshopSidebar;
 use Modules\Workshop\Manager\StylistThemeManager;
 use Modules\Workshop\Manager\ThemeManager;
 use Modules\Workshop\Scaffold\Module\Generators\EntityGenerator;
@@ -16,6 +23,7 @@ use Modules\Workshop\Scaffold\Theme\ThemeScaffold;
 
 class WorkshopServiceProvider extends ServiceProvider
 {
+    use CanPublishConfiguration, CanGetSidebarClassForModule;
     /**
      * Indicates if loading of the provider is deferred.
      *
@@ -32,6 +40,18 @@ class WorkshopServiceProvider extends ServiceProvider
     {
         $this->registerCommands();
         $this->bindThemeManager();
+
+        $this->app['events']->listen(
+            BuildingSidebar::class,
+            $this->getSidebarClassForModule('workshop', RegisterWorkshopSidebar::class)
+        );
+    }
+
+    public function boot()
+    {
+        $this->publishConfig('workshop', 'permissions');
+        $this->publishConfig('workshop', 'config');
+        $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
     }
 
     /**
@@ -47,6 +67,7 @@ class WorkshopServiceProvider extends ServiceProvider
             'command.asgard.module.scaffold',
             'command.asgard.module.update',
             'command.asgard.theme.scaffold',
+            EntityScaffoldCommand::class,
         ]);
     }
 
@@ -65,7 +86,7 @@ class WorkshopServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->bindShared('command.asgard.module.scaffold', function ($app) {
+        $this->app->singleton('command.asgard.module.scaffold', function ($app) {
             return new ModuleScaffoldCommand($app['asgard.module.scaffold']);
         });
     }
@@ -75,7 +96,7 @@ class WorkshopServiceProvider extends ServiceProvider
      */
     private function registerUpdateCommand()
     {
-        $this->app->bindShared('command.asgard.module.update', function ($app) {
+        $this->app->singleton('command.asgard.module.update', function ($app) {
             return new UpdateModuleCommand(new Composer($app['files'], base_path()));
         });
     }
@@ -89,7 +110,7 @@ class WorkshopServiceProvider extends ServiceProvider
             return new ThemeScaffold(new ThemeGeneratorFactory(), $app['files']);
         });
 
-        $this->app->bindShared('command.asgard.theme.scaffold', function ($app) {
+        $this->app->singleton('command.asgard.theme.scaffold', function ($app) {
             return new ThemeScaffoldCommand($app['asgard.theme.scaffold']);
         });
     }

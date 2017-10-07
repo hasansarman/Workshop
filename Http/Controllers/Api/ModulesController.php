@@ -1,9 +1,11 @@
-<?php namespace Modules\Workshop\Http\Controllers\Api;
+<?php
+
+namespace Modules\Workshop\Http\Controllers\Api;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Artisan;
 use InvalidArgumentException;
-use Pingpong\Modules\Module;
+use Nwidart\Modules\Module;
 
 class ModulesController extends Controller
 {
